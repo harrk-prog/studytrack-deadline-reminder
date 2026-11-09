@@ -25,3 +25,21 @@ export function tentukanKategori(tugas, now) {
   if (sisaMs < SATU_HARI_MS) return "mendekati";
   return "normal";
 }
+
+/**
+ * Mengurutkan tugas per kategori: mendekati (deadline terdekat dulu),
+ * overdue (deadline paling baru terlewat dulu), lalu normal (created_at terbaru dulu).
+ * Array asli tidak berubah.
+ * @param {Array<{deadline: string, created_at: string, kategori: string}>} daftar
+ * @returns {Array} array baru yang sudah terurut
+ */
+export function urutkanTugas(daftar) {
+  const grup = (kategori) => daftar.filter((t) => t.kategori === kategori);
+  const mendekati = grup("mendekati")
+    .sort((a, b) => parseDeadline(a.deadline) - parseDeadline(b.deadline));
+  const overdue = grup("overdue")
+    .sort((a, b) => parseDeadline(b.deadline) - parseDeadline(a.deadline));
+  const normal = grup("normal")
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return [...mendekati, ...overdue, ...normal];
+}

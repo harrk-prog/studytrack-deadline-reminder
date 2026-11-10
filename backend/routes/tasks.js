@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { readDB, writeDB } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
+import { tentukanKategori, urutkanTugas } from "../utils/taskReminder.js";
 
 const router = Router();
 
@@ -9,45 +10,25 @@ router.use(requireAuth);
 
 /**
  * GET /api/tasks
- * Daftar seluruh tugas milik pengguna yang sedang login, lintas semua mata
- * kuliah. Setiap tugas menyertakan `mata_kuliah` (nama mata kuliahnya).
- *
- * Urutan saat ini: `created_at` terbaru di atas.
- *
+ * Daftar tugas milik pengguna, tiap tugas diberi kategori,
+ * urutannya mendekati, overdue, normal.
  * Response : 200 { tasks }
- *
- * CATATAN UNTUK PESERTA STUDI KASUS:
- * Ini adalah titik yang relevan untuk fitur "Reminder Tugas Mendekati Deadline".
- * Silakan tambahkan logic untuk menandai/mengurutkan ulang tugas yang
- * sisa waktunya < 24 jam di sini (atau di tempat lain sesuai rancangan Anda).
  */
 router.get("/", (req, res) => {
   const db = readDB();
+  const now = new Date();
   const tasks = db.tasks
     .filter((t) => t.user_id === req.user.id)
     .map((t) => {
       const course = db.courses.find((c) => c.id === t.mata_kuliah_id);
-      return { ...t, mata_kuliah: course ? course.name : null };
-    })
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      return {
+        ...t,
+        mata_kuliah: course ? course.name : null,
+        kategori: tentukanKategori(t, now)
+      };
+    });
 
-  res.json({ tasks });
-});
-
-/**
- * GET /api/tasks/:id
- * Detail satu tugas milik pengguna yang sedang login.
- *
- * Response : 200 { task } | 404 tidak ditemukan
- */
-router.get("/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const db = readDB();
-  const task = db.tasks.find((t) => t.id === id && t.user_id === req.user.id);
-  if (!task) {
-    return res.status(404).json({ error: "Tugas tidak ditemukan." });
-  }
-  res.json({ task });
+  res.json({ tasks: urutkanTugas(tasks) });
 });
 
 /**

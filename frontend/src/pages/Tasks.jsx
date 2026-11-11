@@ -3,6 +3,8 @@ import api from "../api.js";
 import Navbar from "../components/Navbar.jsx";
 import TaskCard from "../components/TaskCard.jsx";
 
+const JEDA_MUAT_ULANG_MS = 60 * 1000;
+
 /**
  * Halaman Daftar Tugas: form tambah tugas dan daftar seluruh tugas pengguna
  * lintas mata kuliah, sesuai urutan yang dikirim backend.
@@ -22,8 +24,24 @@ export default function Tasks() {
     setCourses(coursesRes.data.courses);
   }
 
+  // Kategori tugas dihitung backend berdasarkan waktu, jadi daftar dimuat ulang
+  // berkala dan saat tab aktif kembali.
   useEffect(() => {
-    loadData();
+    const muatUlang = () => {
+      loadData().catch(() => {});
+    };
+    const saatTerlihat = () => {
+      if (document.visibilityState === "visible") muatUlang();
+    };
+
+    muatUlang();
+    const timer = setInterval(muatUlang, JEDA_MUAT_ULANG_MS);
+    document.addEventListener("visibilitychange", saatTerlihat);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", saatTerlihat);
+    };
   }, []);
 
   async function handleSubmit(e) {

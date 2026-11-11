@@ -88,6 +88,16 @@ a {
   color: #065f46;
 }
 
+.badge.mendekati {
+  background: #f97316;
+  color: #1f2937;
+}
+
+.badge.overdue {
+  background: #b91c1c;
+  color: white;
+}
+
 form {
   display: flex;
   flex-direction: column;

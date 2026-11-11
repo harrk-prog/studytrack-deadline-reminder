@@ -33,6 +33,22 @@ router.get("/", (req, res) => {
 });
 
 /**
+ * GET /api/tasks/:id
+ * Detail satu tugas milik pengguna yang sedang login.
+ *
+ * Response : 200 { task } | 404 tidak ditemukan
+ */
+router.get("/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const db = readDB();
+  const task = db.tasks.find((t) => t.id === id && t.user_id === req.user.id);
+  if (!task) {
+    return res.status(404).json({ error: "Tugas tidak ditemukan." });
+  }
+  res.json({ task });
+});
+
+/**
  * POST /api/tasks
  * Menambahkan tugas baru dengan status awal "belum".
  *

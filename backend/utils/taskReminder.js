@@ -1,4 +1,6 @@
 const SATU_HARI_MS = 24 * 60 * 60 * 1000;
+const SELISIH_WIB_MS = 7 * 60 * 60 * 1000;
+const FORMAT_DEADLINE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
 
 /**
  * Baca deadline sebagai WIB. Disimpan tanpa zona, jadi tanpa +07:00
@@ -42,4 +44,20 @@ export function urutkanTugas(daftar) {
   const normal = grup("normal")
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   return [...mendekati, ...overdue, ...normal];
+}
+
+/**
+ * Memeriksa apakah deadline bisa dipakai: berupa string berformat
+ * YYYY-MM-DDTHH:mm (detik opsional), waktunya sah, dan tanggalnya benar-benar ada.
+ * Pemeriksaan terakhir perlu karena JavaScript menggeser tanggal yang tidak ada,
+ * misalnya 31 Februari menjadi 3 Maret, tanpa error.
+ * @param {unknown} deadline
+ * @returns {boolean}
+ */
+export function deadlineValid(deadline) {
+  if (typeof deadline !== "string" || !FORMAT_DEADLINE.test(deadline)) return false;
+  const waktu = parseDeadline(deadline);
+  if (Number.isNaN(waktu.getTime())) return false;
+  const kembaliKeWib = new Date(waktu.getTime() + SELISIH_WIB_MS).toISOString();
+  return kembaliKeWib.slice(0, 16) === deadline.slice(0, 16);
 }

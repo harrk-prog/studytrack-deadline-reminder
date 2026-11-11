@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseDeadline, tentukanKategori, urutkanTugas } from "../utils/taskReminder.js";
+import { deadlineValid, parseDeadline, tentukanKategori, urutkanTugas } from "../utils/taskReminder.js";
 
 const wib = (waktu) => new Date(`${waktu}+07:00`);
 
@@ -68,7 +68,7 @@ describe("tentukanKategori", () => {
   });
 });
 
-describe("urutkanTugas", () => { 
+describe("urutkanTugas", () => {
   const LAB_4 = { judul: "Lab 4", deadline: "2026-07-03T23:59:00", status: "belum", created_at: "2026-06-15T09:00:00" };
   const PROJECT_3 = { judul: "Project 3", deadline: "2026-07-02T10:00:00", status: "belum", created_at: "2026-06-16T14:00:00" };
   const SPRINT_2 = { judul: "Sprint 2", deadline: "2026-07-06T23:59:00", status: "belum", created_at: "2026-06-17T11:00:00" };
@@ -100,5 +100,23 @@ describe("urutkanTugas", () => {
     const salinan = structuredClone(asli);
     urutkanTugas(asli);
     assert.deepEqual(asli, salinan);
+  });
+});
+
+describe("deadlineValid", () => {
+  it("menerima format yang benar", () => {
+    for (const nilai of ["2026-07-03T23:59", "2026-07-03T23:59:00", "2028-02-29T10:00:00"]) {
+      assert.equal(deadlineValid(nilai), true, String(nilai));
+    }
+  });
+
+  it("menolak yang salah", () => {
+    const salah = [
+      "bukan-tanggal", "2026-07-03", "2026-07-03 23:59", "2026-07-03T23:59Z",
+      "2026-02-31T10:00:00", "2026-13-01T10:00:00", "2026-07-03T24:00:00", "", 20260703, null,
+    ];
+    for (const nilai of salah) {
+      assert.equal(deadlineValid(nilai), false, String(nilai));
+    }
   });
 });

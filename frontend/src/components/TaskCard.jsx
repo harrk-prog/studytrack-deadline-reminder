@@ -1,5 +1,11 @@
 import React from "react";
 
+// Kategori ditentukan oleh backend; komponen ini hanya menampilkannya.
+const LABEL_KATEGORI = {
+  mendekati: "Mendekati Deadline",
+  overdue: "Overdue"
+};
+
 /**
  * Memformat deadline ke tampilan lokal Indonesia, contoh: "03 Jul 2026, 23.59".
  *
@@ -24,17 +30,18 @@ function formatDeadline(deadline) {
  * @param {object} props.task Data tugas dari API (termasuk `mata_kuliah`).
  * @param {(task: object) => void} props.onToggleStatus Dipanggil saat tombol status ditekan.
  * @param {(id: number) => void} props.onDelete Dipanggil saat tombol hapus ditekan.
- *
- * CATATAN UNTUK PESERTA STUDI KASUS:
- * Komponen inilah yang merender setiap card tugas pada halaman Daftar Tugas.
- * Penanda visual "Mendekati Deadline" untuk fitur baru kemungkinan besar
- * akan ditambahkan di sekitar sini (atau dengan menambah prop baru ke
- * komponen ini), tergantung rancangan Anda.
  */
 export default function TaskCard({ task, onToggleStatus, onDelete }) {
+  const penanda = LABEL_KATEGORI[task.kategori];
+
   return (
     <div className="card task-card">
       <div>
+        {penanda && (
+          <div style={{ marginBottom: 6 }}>
+            <span className={`badge ${task.kategori}`}>{penanda}</span>
+          </div>
+        )}
         <strong>{task.judul}</strong>
         <div className="meta">{task.mata_kuliah}</div>
         <div className="meta">Deadline: {formatDeadline(task.deadline)}</div>

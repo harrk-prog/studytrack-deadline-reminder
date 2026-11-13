@@ -1,5 +1,9 @@
 /**
- * Penyimpanan data berbasis file JSON (`backend/db.json`).
+ * Penyimpanan data berbasis file JSON (`db.json`).
+ *
+ * Lokasi berkas: `backend/db.json` saat dijalankan lokal. Di Vercel folder
+ * aplikasi bersifat read-only, jadi berkas ditulis ke folder temporary sistem
+ * dan datanya ter-reset saat instance dimatikan.
  *
  * Isi berkas:
  *   nextIds : penghitung ID auto-increment untuk tiap entitas
@@ -14,12 +18,15 @@
  *     Data seed memakai format lokal tanpa zona waktu.
  */
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "db.json");
+const DB_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), "db.json")
+  : path.join(__dirname, "db.json");
 
 /**
  * Membuat data awal (seed) yang sesuai dengan contoh data pada dokumen studi

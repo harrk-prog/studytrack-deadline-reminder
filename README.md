@@ -1,6 +1,6 @@
 # StudyTrack: Reminder Tugas Mendekati Deadline
 
-Proyek ini mengembangkan starter kit StudyTrack dengan fitur penanda tugas berdasarkan waktu deadline, untuk bonus **Implementasi kode nyata** pada studi kasus seleksi Software Engineer, Academya Arkavidia 11.0.
+Proyek ini mengembangkan starter kit StudyTrack dengan fitur penanda tugas berdasarkan waktu deadline, untuk bonus studi kasus seleksi Software Engineer, Academya Arkavidia 11.0 (implementasi kode, git history, deployment, dan fitur AI).
 
 Starter kit asli: [github.com/ZulfaNurhuda/StudyTrack](https://github.com/ZulfaNurhuda/StudyTrack). Bagian bawaan starter kit dan bagian yang saya tambahkan dipisahkan di bawah supaya jelas mana yang kode panitia dan mana yang kode saya.
 
@@ -13,7 +13,7 @@ Demo: [studytrack-deadline-reminder.vercel.app](https://studytrack-deadline-remi
 
 ## Prasyarat
 
-- Node.js 20.19 atau lebih baru (atau 22.12+), sesuai syarat Vite 8.
+- Node.js 22.12 atau lebih baru. `@google/genai` butuh Node 22, dan Vite 8 butuh 22.12.
 - npm.
 
 ## Fitur Bawaan Starter Kit
@@ -43,6 +43,13 @@ Aturan yang berlaku:
 - **Validasi.** `deadline` yang formatnya salah atau tanggalnya tidak ada (contoh 31 Februari) ditolak dengan status 400.
 - **Halaman dimuat ulang** tiap 60 detik dan saat tab aktif kembali.
 
+## Fitur Saran Rencana (AI)
+
+- **Fungsi.** Tombol "Minta Saran" di Daftar Tugas menampilkan 3 sampai 5 kalimat saran urutan pengerjaan.
+- **Pembagian peran.** Kategori dan sisa jam dihitung backend. AI hanya menyusun kalimat dan tidak mengubah data.
+- **Data yang dikirim.** Maksimal 10 tugas aktif (judul, mata kuliah, kategori, sisa jam), ditambah waktu sekarang dalam WIB, tanpa deskripsi.
+- **Privasi.** Data yang dikirim lewat tier gratis Gemini bisa dipakai Google untuk meningkatkan layanannya. Itu sebabnya data yang dikirim dibuat seminimal mungkin.
+
 ## Cara Menjalankan
 
 ### 1. Backend
@@ -55,6 +62,8 @@ npm run dev
 ```
 
 Backend berjalan di `http://localhost:4000`. Port dan `JWT_SECRET` bisa diatur lewat file `.env`.
+
+Untuk mengaktifkan Saran Rencana, isi `GEMINI_API_KEY` (dibuat di [aistudio.google.com](https://aistudio.google.com)) dan `GEMINI_MODEL` (contoh: `gemini-3.5-flash-lite`) di `.env`. Kalau dibiarkan kosong, endpoint membalas 503 dan aplikasi lain tetap jalan.
 
 ### 2. Frontend
 
@@ -91,7 +100,7 @@ cd backend
 npm test
 ```
 
-Hasilnya 16 pengujian untuk fungsi di [utils/taskReminder.js](backend/utils/taskReminder.js).
+Hasilnya 26 pengujian: fungsi reminder di [utils/taskReminder.js](backend/utils/taskReminder.js) diuji oleh [tests/taskReminder.test.js](backend/tests/taskReminder.test.js), dan penyusun prompt di [utils/aiPlan.js](backend/utils/aiPlan.js) oleh [tests/aiPlan.test.js](backend/tests/aiPlan.test.js). Pengujian tidak memanggil API Gemini.
 
 Di Windows, kalau PowerShell memblokir `npm`, pakai `npm.cmd test`.
 
@@ -154,6 +163,7 @@ Semua endpoint di bawah `/api`. Endpoint bertanda "Ya" membutuhkan header `Autho
 | `GET` | `/tasks/:id` | Ya | Detail satu tugas |
 | `POST` | `/tasks` | Ya | Tambah tugas (`mata_kuliah_id`, `judul`, `deadline`, `deskripsi?`). `deadline` divalidasi, 400 kalau tidak valid |
 | `PUT` | `/tasks/:id` | Ya | Ubah tugas, termasuk status. `deadline` divalidasi kalau ikut dikirim |
+| `POST` | `/tasks/saran` | Ya | Saran urutan pengerjaan dari AI (429 kuota habis, 502 gagal, 503 belum aktif) |
 | `DELETE` | `/tasks/:id` | Ya | Hapus tugas |
 | `POST` | `/dev/reset` | Tidak | Reset data ke seed (hanya di luar production) |
 
@@ -169,11 +179,13 @@ studytrack-deadline-reminder/
 │   ├── routes/
 │   │   ├── auth.js          # Register, login, profil
 │   │   ├── courses.js       # CRUD mata kuliah
-│   │   └── tasks.js         # CRUD tugas + kategori
+│   │   └── tasks.js         # CRUD tugas + kategori + saran AI
 │   ├── utils/
-│   │   └── taskReminder.js  # Logika kategori, urutan, dan validasi deadline
+│   │   ├── taskReminder.js  # Logika kategori, urutan, dan validasi deadline
+│   │   └── aiPlan.js        # Prompt dan pemanggilan Gemini untuk Saran Rencana
 │   └── tests/
-│       └── taskReminder.test.js  # Pengujian fungsi reminder
+│       ├── taskReminder.test.js  # Pengujian fungsi reminder
+│       └── aiPlan.test.js        # Pengujian penyusun prompt
 └── frontend/
     ├── vercel.json          # Rewrite /api/* ke backend dan route lain ke index.html
     └── src/
@@ -194,10 +206,12 @@ studytrack-deadline-reminder/
 - Pengujian API (dua akun, tanpa token, validasi) dilakukan manual.
 - Data di demo bersifat sementara dan kembali ke data seed saat redeploy atau saat instance dimatikan.
 - Di server Vercel yang diuji ulang hanya kategori lewat API. Delapan skenario lengkap diuji di komputer lokal.
+- Kuota AI gratis terbatas dan belum dibatasi per pengguna.
+- Isi saran AI bisa keliru.
 
 ## Deployment
 
-- **Backend:** project Vercel dengan root `backend` dan preset Express. Environment variable yang dipasang: `JWT_SECRET` (string acak) dan `NODE_ENV=production`.
+- **Backend:** project Vercel dengan root `backend` dan preset Express. Environment variable yang dipasang: `JWT_SECRET` (string acak), `NODE_ENV=production`, `GEMINI_API_KEY`, dan `GEMINI_MODEL`.
 - **Frontend:** project Vercel kedua dengan root `frontend` dan preset Vite. `vercel.json` meneruskan `/api/*` ke backend dan mengarahkan route lain ke `index.html`, jadi `baseURL: "/api"` tidak perlu diubah.
 - **Penyimpanan:** di Vercel, folder aplikasi bersifat read-only, jadi `db.json` ditulis ke folder temporary (`os.tmpdir()`).
 - **Hosting satu server (alternatif):** jalankan `npm run build` di `frontend`, lalu jalankan backend dengan `NODE_ENV=production`. Express akan menyajikan `frontend/dist`.

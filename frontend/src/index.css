@@ -131,9 +131,28 @@ button[type="submit"]:hover,
   opacity: 0.9;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .error {
   color: #b91c1c;
   font-size: 0.9rem;
+}
+
+.saran {
+  background: #f3f4f6;
+  padding: 12px 14px;
+  border-radius: 6px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.catatan-ai {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0;
 }
 
 h1, h2 {

@@ -17,6 +17,9 @@ export default function Tasks() {
   const [deskripsi, setDeskripsi] = useState("");
   const [deadline, setDeadline] = useState("");
   const [error, setError] = useState("");
+  const [saran, setSaran] = useState("");
+  const [memuatSaran, setMemuatSaran] = useState(false);
+  const [errorSaran, setErrorSaran] = useState("");
 
   async function loadData() {
     const [tasksRes, coursesRes] = await Promise.all([api.get("/tasks"), api.get("/courses")]);
@@ -59,6 +62,21 @@ export default function Tasks() {
       loadData();
     } catch (err) {
       setError(err.response?.data?.error || "Gagal menambahkan tugas.");
+    }
+  }
+
+  // Pesan error dari backend (503, 429, 502) sudah ramah pengguna, jadi diteruskan apa adanya.
+  async function handleSaran() {
+    setSaran("");
+    setErrorSaran("");
+    setMemuatSaran(true);
+    try {
+      const res = await api.post("/tasks/saran");
+      setSaran(res.data.saran);
+    } catch (err) {
+      setErrorSaran(err.response?.data?.error || "Gagal meminta saran.");
+    } finally {
+      setMemuatSaran(false);
     }
   }
 
@@ -112,6 +130,23 @@ export default function Tasks() {
             {error && <p className="error">{error}</p>}
             <button type="submit">Tambah Tugas</button>
           </form>
+        </div>
+
+        <div className="card">
+          <h2>Saran Rencana</h2>
+          <button
+            type="button"
+            className="btn"
+            onClick={handleSaran}
+            disabled={memuatSaran || tasks.length === 0}
+          >
+            {memuatSaran ? "Menyusun saran..." : "Minta Saran"}
+          </button>
+          {errorSaran && <p className="error">{errorSaran}</p>}
+          {saran && <p className="saran">{saran}</p>}
+          <p className="catatan-ai">
+            Saran dibuat AI dan bisa keliru. Label dan urutan tugas tetap mengikuti aturan aplikasi.
+          </p>
         </div>
 
         {tasks.length === 0 && <p>Belum ada tugas. Tambahkan tugas pertama Anda di atas.</p>}

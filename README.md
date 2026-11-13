@@ -100,7 +100,7 @@ cd backend
 npm test
 ```
 
-Hasilnya 26 pengujian: fungsi reminder di [utils/taskReminder.js](backend/utils/taskReminder.js) diuji oleh [tests/taskReminder.test.js](backend/tests/taskReminder.test.js), dan penyusun prompt di [utils/aiPlan.js](backend/utils/aiPlan.js) oleh [tests/aiPlan.test.js](backend/tests/aiPlan.test.js). Pengujian tidak memanggil API Gemini.
+Hasilnya 30 pengujian: fungsi reminder di [utils/taskReminder.js](backend/utils/taskReminder.js) diuji oleh [tests/taskReminder.test.js](backend/tests/taskReminder.test.js), penyusun prompt di [utils/aiPlan.js](backend/utils/aiPlan.js) oleh [tests/aiPlan.test.js](backend/tests/aiPlan.test.js), dan pembatas permintaan di [utils/batasSaran.js](backend/utils/batasSaran.js) oleh [tests/batasSaran.test.js](backend/tests/batasSaran.test.js). Pengujian tidak memanggil API Gemini.
 
 Di Windows, kalau PowerShell memblokir `npm`, pakai `npm.cmd test`.
 
@@ -163,7 +163,7 @@ Semua endpoint di bawah `/api`. Endpoint bertanda "Ya" membutuhkan header `Autho
 | `GET` | `/tasks/:id` | Ya | Detail satu tugas |
 | `POST` | `/tasks` | Ya | Tambah tugas (`mata_kuliah_id`, `judul`, `deadline`, `deskripsi?`). `deadline` divalidasi, 400 kalau tidak valid |
 | `PUT` | `/tasks/:id` | Ya | Ubah tugas, termasuk status. `deadline` divalidasi kalau ikut dikirim |
-| `POST` | `/tasks/saran` | Ya | Saran urutan pengerjaan dari AI (429 kuota habis, 502 gagal, 503 belum aktif) |
+| `POST` | `/tasks/saran` | Ya | Saran urutan pengerjaan dari AI (429 kuota habis atau masih dalam jeda 30 detik, 502 gagal, 503 belum aktif) |
 | `DELETE` | `/tasks/:id` | Ya | Hapus tugas |
 | `POST` | `/dev/reset` | Tidak | Reset data ke seed (hanya di luar production) |
 
@@ -182,10 +182,12 @@ studytrack-deadline-reminder/
 │   │   └── tasks.js         # CRUD tugas + kategori + saran AI
 │   ├── utils/
 │   │   ├── taskReminder.js  # Logika kategori, urutan, dan validasi deadline
-│   │   └── aiPlan.js        # Prompt dan pemanggilan Gemini untuk Saran Rencana
+│   │   ├── aiPlan.js        # Prompt dan pemanggilan Gemini untuk Saran Rencana
+│   │   └── batasSaran.js    # Jeda 30 detik per pengguna untuk Saran Rencana
 │   └── tests/
 │       ├── taskReminder.test.js  # Pengujian fungsi reminder
-│       └── aiPlan.test.js        # Pengujian penyusun prompt
+│       ├── aiPlan.test.js        # Pengujian penyusun prompt
+│       └── batasSaran.test.js    # Pengujian pembatas permintaan
 └── frontend/
     ├── vercel.json          # Rewrite /api/* ke backend dan route lain ke index.html
     └── src/
@@ -206,7 +208,8 @@ studytrack-deadline-reminder/
 - Pengujian API (dua akun, tanpa token, validasi) dilakukan manual.
 - Data di demo bersifat sementara dan kembali ke data seed saat redeploy atau saat instance dimatikan.
 - Di server Vercel yang diuji ulang hanya kategori lewat API. Delapan skenario lengkap diuji di komputer lokal.
-- Kuota AI gratis terbatas dan belum dibatasi per pengguna.
+- Kuota AI gratis terbatas.
+- Permintaan saran dibatasi sekali per 30 detik per pengguna. Batas ini disimpan di memori server, jadi di Vercel sifatnya tidak mutlak.
 - Isi saran AI bisa keliru.
 
 ## Deployment

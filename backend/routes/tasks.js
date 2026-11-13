@@ -3,6 +3,7 @@ import { readDB, writeDB } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { deadlineValid, tentukanKategori, urutkanTugas } from "../utils/taskReminder.js";
 import { buatPrompt, mintaSaran } from "../utils/aiPlan.js";
+import { pembatasSaran } from "../utils/batasSaran.js";
 
 const router = Router();
 const PESAN_DEADLINE_TIDAK_VALID = "Format deadline tidak valid. Contoh: 2026-07-03T23:59.";
@@ -47,7 +48,10 @@ router.get("/", (req, res) => {
  * Saran urutan pengerjaan dari AI untuk tugas yang belum selesai.
  * Kategori dan sisa waktu dihitung backend; AI hanya menyusun kalimat saran.
  *
- * Response : 200 { saran } | 429 kuota AI habis | 502 layanan AI gagal | 503 fitur belum diaktifkan
+ * Satu pengguna hanya boleh meminta saran sekali per 30 detik. Permintaan yang
+ * gagal tetap dihitung supaya kuota tidak dihabiskan dengan mengklik terus.
+ *
+ * Response : 200 { saran } | 429 kuota AI habis atau masih dalam jeda | 502 layanan AI gagal | 503 fitur belum diaktifkan
  */
 router.post("/saran", async (req, res) => {
   const now = new Date();
@@ -55,6 +59,14 @@ router.post("/saran", async (req, res) => {
   if (prompt === null) {
     return res.json({ saran: "Tidak ada tugas aktif. Semua tugas sudah selesai." });
   }
+
+  const sisa = pembatasSaran.sisaJeda(req.user.id, now);
+  if (sisa > 0) {
+    return res.status(429).json({
+      error: `Tunggu ${Math.ceil(sisa / 1000)} detik sebelum meminta saran lagi.`
+    });
+  }
+  pembatasSaran.catat(req.user.id, now);
 
   try {
     const saran = await mintaSaran(prompt);

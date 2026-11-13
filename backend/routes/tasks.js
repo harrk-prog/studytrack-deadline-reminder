@@ -2,6 +2,7 @@ import { Router } from "express";
 import { readDB, writeDB } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { deadlineValid, tentukanKategori, urutkanTugas } from "../utils/taskReminder.js";
+import { buatPrompt, mintaSaran } from "../utils/aiPlan.js";
 
 const router = Router();
 const PESAN_DEADLINE_TIDAK_VALID = "Format deadline tidak valid. Contoh: 2026-07-03T23:59.";
@@ -10,16 +11,16 @@ const PESAN_DEADLINE_TIDAK_VALID = "Format deadline tidak valid. Contoh: 2026-07
 router.use(requireAuth);
 
 /**
- * GET /api/tasks
- * Daftar tugas milik pengguna, tiap tugas diberi kategori,
+ * Tugas milik satu pengguna, lengkap dengan nama mata kuliah dan kategori,
  * urutannya mendekati, overdue, normal.
- * Response : 200 { tasks }
+ * @param {object} db isi database
+ * @param {number} userId
+ * @param {Date} now
+ * @returns {Array}
  */
-router.get("/", (req, res) => {
-  const db = readDB();
-  const now = new Date();
+function daftarTugasUser(db, userId, now) {
   const tasks = db.tasks
-    .filter((t) => t.user_id === req.user.id)
+    .filter((t) => t.user_id === userId)
     .map((t) => {
       const course = db.courses.find((c) => c.id === t.mata_kuliah_id);
       return {
@@ -28,8 +29,46 @@ router.get("/", (req, res) => {
         kategori: tentukanKategori(t, now)
       };
     });
+  return urutkanTugas(tasks);
+}
 
-  res.json({ tasks: urutkanTugas(tasks) });
+/**
+ * GET /api/tasks
+ * Daftar tugas milik pengguna, tiap tugas diberi kategori,
+ * urutannya mendekati, overdue, normal.
+ * Response : 200 { tasks }
+ */
+router.get("/", (req, res) => {
+  res.json({ tasks: daftarTugasUser(readDB(), req.user.id, new Date()) });
+});
+
+/**
+ * POST /api/tasks/saran
+ * Saran urutan pengerjaan dari AI untuk tugas yang belum selesai.
+ * Kategori dan sisa waktu dihitung backend; AI hanya menyusun kalimat saran.
+ *
+ * Response : 200 { saran } | 429 kuota AI habis | 502 layanan AI gagal | 503 fitur belum diaktifkan
+ */
+router.post("/saran", async (req, res) => {
+  const now = new Date();
+  const prompt = buatPrompt(daftarTugasUser(readDB(), req.user.id, now), now);
+  if (prompt === null) {
+    return res.json({ saran: "Tidak ada tugas aktif. Semua tugas sudah selesai." });
+  }
+
+  try {
+    const saran = await mintaSaran(prompt);
+    if (saran === null) {
+      return res.status(503).json({ error: "Fitur saran AI belum diaktifkan." });
+    }
+    res.json({ saran });
+  } catch (err) {
+    if (err.status === 429) {
+      return res.status(429).json({ error: "Kuota AI sedang habis. Coba lagi nanti." });
+    }
+    console.error(err.message);
+    res.status(502).json({ error: "Layanan AI sedang tidak bisa dihubungi." });
+  }
 });
 
 /**

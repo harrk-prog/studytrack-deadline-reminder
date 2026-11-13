@@ -4,6 +4,8 @@
  * Menyiapkan Express, mendaftarkan route tiap modul (auth, courses, tasks),
  * lalu menjalankan server.
  */
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 import cors from "cors";
 
@@ -12,6 +14,8 @@ import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/courses.js";
 import taskRoutes from "./routes/tasks.js";
 import { resetDB } from "./db.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
@@ -39,6 +43,20 @@ if (process.env.NODE_ENV !== "production") {
     res.json({ success: true, message: "Database direset ke data seed awal." });
   });
 }
+
+/*
+ * Menyajikan hasil build frontend (frontend/dist) dari server yang sama,
+ * sehingga halaman dan API berada di satu origin saat di-deploy.
+ */
+const folderDist = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(folderDist));
+
+// Halaman React Router (/login, /tasks) tetap terbuka saat di-refresh.
+// Pola (?!api) memastikan path /api/... tidak ikut ditangkap, sehingga
+// endpoint yang salah tetap mendapat 404 JSON, bukan HTML.
+app.get(/^\/(?!api(\/|$)).*/, (req, res) => {
+  res.sendFile(path.join(folderDist, "index.html"));
+});
 
 // Fallback untuk endpoint yang tidak terdaftar
 app.use((req, res) => {

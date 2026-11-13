@@ -4,6 +4,8 @@ Proyek ini mengembangkan starter kit StudyTrack dengan fitur penanda tugas berda
 
 Starter kit asli: [github.com/ZulfaNurhuda/StudyTrack](https://github.com/ZulfaNurhuda/StudyTrack). Bagian bawaan starter kit dan bagian yang saya tambahkan dipisahkan di bawah supaya jelas mana yang kode panitia dan mana yang kode saya.
 
+Demo: [studytrack-deadline-reminder.vercel.app](https://studytrack-deadline-reminder.vercel.app). Akun demo di bagian [Akun Demo](#3-akun-demo) bisa dipakai di sana.
+
 ## Stack
 
 - **Backend:** Node.js + Express. Data disimpan di file JSON, jadi tidak perlu memasang database terpisah.
@@ -173,6 +175,7 @@ studytrack-deadline-reminder/
 │   └── tests/
 │       └── taskReminder.test.js  # Pengujian fungsi reminder
 └── frontend/
+    ├── vercel.json          # Rewrite /api/* ke backend dan route lain ke index.html
     └── src/
         ├── main.jsx, App.jsx, AuthContext.jsx, api.js
         ├── index.css        # Gaya tampilan, termasuk penanda
@@ -188,9 +191,13 @@ studytrack-deadline-reminder/
 ## Batasan
 
 - Pengguna di luar WIB belum didukung.
-- Aplikasi belum di-deploy. Pengujian zona waktu dilakukan di tingkat fungsi.
 - Pengujian API (dua akun, tanpa token, validasi) dilakukan manual.
+- Data di demo bersifat sementara dan kembali ke data seed saat redeploy atau saat instance dimatikan.
+- Di server Vercel yang diuji ulang hanya kategori lewat API. Delapan skenario lengkap diuji di komputer lokal.
 
-## Catatan
+## Deployment
 
-- **Deployment.** Proxy Vite hanya berlaku saat `npm run dev`, jadi frontend hasil build perlu diarahkan ke URL backend (misalnya lewat `baseURL` di `frontend/src/api.js`). Ganti juga `JWT_SECRET` dengan nilai acak dan atur `NODE_ENV=production`. Penyimpanan file di layanan gratis seperti Render atau Railway umumnya bersifat sementara, sehingga `db.json` bisa hilang saat redeploy.
+- **Backend:** project Vercel dengan root `backend` dan preset Express. Environment variable yang dipasang: `JWT_SECRET` (string acak) dan `NODE_ENV=production`.
+- **Frontend:** project Vercel kedua dengan root `frontend` dan preset Vite. `vercel.json` meneruskan `/api/*` ke backend dan mengarahkan route lain ke `index.html`, jadi `baseURL: "/api"` tidak perlu diubah.
+- **Penyimpanan:** di Vercel, folder aplikasi bersifat read-only, jadi `db.json` ditulis ke folder temporary (`os.tmpdir()`).
+- **Hosting satu server (alternatif):** jalankan `npm run build` di `frontend`, lalu jalankan backend dengan `NODE_ENV=production`. Express akan menyajikan `frontend/dist`.

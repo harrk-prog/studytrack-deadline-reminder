@@ -5,8 +5,9 @@ export const TOKEN_KEY = "studytrack_token";
 
 /**
  * Instance axios untuk seluruh pemanggilan API backend.
- * Pada mode development, request `/api/*` di-proxy ke backend oleh Vite
- * (lihat `vite.config.js`).
+ * Saat development, request `/api/*` di-proxy ke backend oleh Vite
+ * (lihat `vite.config.js`). Saat production, frontend dan API berada di origin
+ * yang sama, jadi path relatif `/api` tetap berlaku tanpa pengaturan tambahan.
  */
 const api = axios.create({
   baseURL: "/api"

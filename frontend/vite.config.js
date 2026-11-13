@@ -5,7 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Meneruskan request /api/* ke backend agar tidak terkendala CORS saat development.
+    // Hanya untuk development: request /api/* diteruskan ke backend. Di production,
+    // frontend dan API disajikan Express dari origin yang sama, jadi proxy ini tidak dipakai.
     proxy: {
       "/api": {
         target: "http://localhost:4000",

@@ -6,6 +6,8 @@ Starter kit asli: [github.com/ZulfaNurhuda/StudyTrack](https://github.com/ZulfaN
 
 Demo: [studytrack-deadline-reminder.vercel.app](https://studytrack-deadline-reminder.vercel.app). Akun demo di bagian [Akun Demo](#3-akun-demo) bisa dipakai di sana.
 
+Slide studi kasus: [docs/slide-studi-kasus.pdf](docs/slide-studi-kasus.pdf)
+
 ## Stack
 
 - **Backend:** Node.js + Express. Data disimpan di file JSON, jadi tidak perlu memasang database terpisah.
